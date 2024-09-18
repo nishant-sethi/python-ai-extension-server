@@ -55,9 +55,11 @@ class LangchainPipeline:
 
         # Initialize internal state
         self.loader = CustomDocumentLoader()
-        self.splitter = CustomDocumentSplitter()
-        self.embedding_store = CustomEmbeddingStore()
-        self.document_retriever = CustomDocumentRetriever()
+        self.splitter = CustomDocumentSplitter(doc_loader=self.loader or None)
+        self.embedding_store = CustomEmbeddingStore(
+            doc_splitter=self.splitter or None)
+        self.document_retriever = CustomDocumentRetriever(
+            embedding_store=self.embedding_store or None)
 
         self.__llm = None
         self.__rag_chain = None
@@ -73,7 +75,7 @@ class LangchainPipeline:
         self.__system_prompt = system_prompt
 
     def setup_environment_variables(self):
-        """ 
+        """
         Set up the environment variables for langsmith
         """
         try:
@@ -96,16 +98,36 @@ class LangchainPipeline:
         self.setup_environment_variables()
         # self.__url = url
         try:
-            # Set up the prompt template if qa_chain is False
-            self.setup_retriever(url)
-            self.setup_llm()
-            self.setup_rag_chain()
+            try:
+                self.setup_retriever(url)
+            except Exception as e:
+                logging.error(f"""Failed to set up retriever: {
+                              str(e)} """)
+                raise Exception(f"""Failed to set up retriever: {str(e)}""")
+            try:
+                self.setup_llm()
+            except Exception as e:
+                logging.error(f"""Failed to set up LLM: {
+                              str(e)} """)
+                raise Exception(f"""Failed to set up LLM: {str(e)}""")
+            try:
+                self.setup_rag_chain()
+            except Exception as e:
+                logging.error(f"""Failed to set up RAG chain: {
+                              str(e)} """)
+                raise Exception(f"""Failed to set up RAG chain: {str(e)}""")
             if qa_chain:
                 logging.debug(
                     f"Setting up conversation RAG chain \n")
-                self.setup_conversation_chain()
+                try:
+                    self.setup_conversation_chain()
+                except Exception as e:
+                    logging.error(f"""Failed to set up conversation chain: {
+                                  str(e)} """)
+                    raise Exception(f"""Failed to set up conversation chain: {
+                        str(e)}""")    
             logging.info(f"""Pipeline setup complete, Time Taken: {
-                        time_taken(start_time)} \n""")
+                time_taken(start_time)} \n""")
         except Exception as e:
             logging.error(f"""Failed to set up langchain environment: {
                           str(e)}  \n""")
@@ -116,19 +138,41 @@ class LangchainPipeline:
         """
         Sets up the document retriever.
         """
+        # if self.__url == url:
+        #     logging.info(f"Retriever already set up for {url} ")
+        #     return     
         try:
-            if self.__url != url:
+            try:
                 self.loader.load(url)
+            except Exception as e:
+                logging.error(f"""Failed to load documents: {
+                              str(e)} """)
+                raise Exception(f"""Failed to load documents: {str(e)}""")
+            try:
                 self.splitter.split()
-                self.embedding_store.store()
+            except Exception as e:
+                logging.error(f"""Failed to split documents: {
+                              str(e)} """)
+                raise Exception(f"""Failed to split documents: {str(e)}""")
+            try:
+                self.embedding_store.store_embeddings()
+            except Exception as e:
+                logging.error(f"""Failed to store documents: {
+                              str(e)} """)
+                raise Exception(f"""Failed to store documents: {str(e)}""")
+            try:
                 self.document_retriever.retrieve()
-                # retriever = CustomDocumentRetriever.retrieve()
-                self.__url = url
-
-            else:
-                logging.info(f"Retriever already set up for {
-                             url} ")
-            self.__retriever = self.document_retriever.get_retriever()
+            except Exception as e:
+                logging.error(f"""Failed to retrieve documents: {
+                              str(e)} """)
+                raise Exception(f"""Failed to retrieve documents: {str(e)}""")
+            try:
+                self.__retriever = self.document_retriever.get_retriever()
+            except Exception as e:
+                logging.error(f"""Failed to get retriever: {
+                              str(e)} """)
+                raise Exception(f"""Failed to get retriever: {str(e)}""")
+            self.__url = url
         except Exception as e:
             logging.error(f"""Failed to set up retriever: {
                 str(e)} """)
@@ -161,11 +205,14 @@ class LangchainPipeline:
                       type(format_docs)}, prompt = {type(self.__prompt)}, llm = {type(self.__llm)}\n')
         # Ensure the retriever and other components are initialized
         if not self.__retriever:
-            raise Exception("Retriever not set up. Please set up retriever before RAG chain.")
+            raise Exception(
+                "Retriever not set up. Please set up retriever before RAG chain.")
         if not self.__prompt:
-            raise Exception("Prompt not set up. Please set up prompt before RAG chain.")
+            raise Exception(
+                "Prompt not set up. Please set up prompt before RAG chain.")
         if not self.__llm:
-            raise Exception("LLM not set up. Please set up LLM before RAG chain.")
+            raise Exception(
+                "LLM not set up. Please set up LLM before RAG chain.")
         try:
             self.__rag_chain = (
                 {"context": self.__retriever | format_docs,
@@ -189,12 +236,13 @@ class LangchainPipeline:
             try:
                 # keep the latest 25 messages
                 latest_messages = chat_history.messages[-25:]
-                logging.info(f""" keeping latest {len(latest_messages)} messages """)
+                logging.info(f""" keeping latest {
+                             len(latest_messages)} messages """)
                 # divide the remaining messages into 5 parts
                 remaining_messages = chat_history.messages[:-25]
                 part_size = len(remaining_messages) // 5
                 parts = [remaining_messages[i:i+part_size]
-                        for i in range(0, len(remaining_messages), part_size)]
+                         for i in range(0, len(remaining_messages), part_size)]
 
                 # summarize each part using your text summarizing tool
                 summarized_parts = []
@@ -205,7 +253,7 @@ class LangchainPipeline:
                 # add the summarized parts back to the conversation history
                 chat_history.messages = latest_messages + summarized_parts
                 logging.info(f"""Total messages in chat history: {
-                            len(chat_history.messages)} """)
+                    len(chat_history.messages)} """)
                 return chat_history
             except Exception as e:
                 logging.error(f"""Failed to trim and summarize history: {
@@ -219,7 +267,8 @@ class LangchainPipeline:
                 self.__chat_store[session_id] = ChatMessageHistory()
             chat_history = self.__chat_store[session_id]
             if (len(chat_history.messages) > 50):
-                logging.info(f""" chat history is too long, trimming and summarizing """)
+                logging.info(
+                    f""" chat history is too long, trimming and summarizing """)
                 chat_history = trim_and_summarize_history(chat_history)
             return chat_history
 

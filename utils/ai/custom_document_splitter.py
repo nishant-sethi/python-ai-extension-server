@@ -5,8 +5,6 @@ import logging
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from utils.ai.custom_document_loader import CustomDocumentLoader
-
 logging.basicConfig(
     filename='app.log',
     level=logging.DEBUG,
@@ -34,23 +32,34 @@ class CustomDocumentSplitter:
 
     docs_split: list = []
 
-    def __init__(self, text_splitter=RecursiveCharacterTextSplitter, chunk_size=1000,
-                 chunk_overlap=200,
-                 add_start_index=True):
+    def __init__(self, text_splitter=RecursiveCharacterTextSplitter, chunk_size=1000, chunk_overlap=200, add_start_index=True, doc_loader=None):
+        """ Initializes the CustomDocumentSplitter with the specified parameters.
+            :param text_splitter: The text splitter to use (default: RecursiveCharacterTextSplitter).
+            :param chunk_size: The size of the chunks (default: 1000).
+            :param chunk_overlap: The overlap between chunks (default: 200).
+            :param add_start_index: Whether to add the start index (default: True)
+            :param doc_loader: The document loader to use (default: None).
+        """
         self.text_splitter = text_splitter
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         self.add_start_index = add_start_index
 
-    @classmethod
-    def get_docs_split(cls):
-        return cls.docs_split
+        # Initialize the document loader
+        self.doc_loader = doc_loader
+
+    def get_docs_split(self):
+        """ Get the split documents.
+        Returns:
+            docs_split: The split documents.
+        """
+        return self.docs_split
 
     def split(self):
         """
         Splits the documents into smaller chunks.
         """
-        docs = CustomDocumentLoader.get_docs()
+        docs = self.doc_loader.get_docs()
         if not docs:
             logging.error(f"""No document to split \n""")
             raise Exception(f"""No document to split""")
@@ -62,7 +71,7 @@ class CustomDocumentSplitter:
             )
             start_time = datetime.datetime.now()
             all_splits = text_splitter.split_documents(docs)
-            CustomDocumentSplitter.docs_split = all_splits
+            self.docs_split = all_splits
             logging.info(f"""{len(all_splits)} splits created, Time Taken: {
                          time_taken(start_time)} \n""")
         except Exception as e:

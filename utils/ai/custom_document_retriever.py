@@ -1,6 +1,5 @@
 import datetime
 import logging
-from utils.ai.custom_embedding_store import CustomEmbeddingStore
 
 logging.basicConfig(
     filename='app.log',
@@ -17,16 +16,20 @@ def time_taken(start_time):
 class CustomDocumentRetriever:
     """Custom class to create a Langchain DocumentRetriever at runtime."""
 
-    def __init__(self, search_type="similarity", search_args={"k": 5}):
+    def __init__(self, search_type="similarity", search_args={"k": 5}, embedding_store=None):
         """
         Initializes the CustomDocumentRetriever with specified search parameters.
 
         :param search_type: The type of search to use (default: "similarity").
         :param search_args: Arguments for the search (default: {"k": 5}).
+        :param embedding_store: The embedding store to use (default: None).
         """
         self.search_type = search_type
         self.search_args = search_args
         self.retriever = None  # Instance variable to store retriever
+
+        # Initialize the embedding store
+        self.embedding_store = embedding_store
 
     def get_retriever(self):
         """
@@ -45,7 +48,7 @@ class CustomDocumentRetriever:
         Sets up a retriever from the vector store.
         """
         try:
-            vector_store = CustomEmbeddingStore.get_store()
+            vector_store = self.embedding_store.get_store()
             logging.info(f"Retrieved vector store ")
         except Exception as e:
             logging.error(f"""No vector store to retrieve from: {str(e)} \n""")

@@ -29,11 +29,18 @@ class CustomDocumentLoader:
     docs: list = []
 
     def __init__(self, loader=WebBaseLoader):
+        """ Initializes the CustomDocumentLoader with the specified loader.
+            :param loader: The loader to use (default: WebBaseLoader).
+        """
         self.loader = loader
 
-    @classmethod
-    def get_docs(cls):
-        return cls.docs
+    def get_docs(self):
+        """ Get the loaded documents.
+
+        Returns:
+            docs: The loaded documents.
+        """
+        return self.docs
 
     def load(self, url: str):
         """
@@ -50,9 +57,9 @@ class CustomDocumentLoader:
                 bs_kwargs={"parse_only": bs4_strainer},
             )
             docs = loader.load()
-            CustomDocumentLoader.docs = docs
+            self.docs = docs
             logging.info(f"""Loaded documents from {url}, page content: {len(
-                CustomDocumentLoader.docs[0].page_content)}, Time Taken: {time_taken(start_time)} \n""")
+                self.docs[0].page_content)}, Time Taken: {time_taken(start_time)} \n""")
         except Exception as e:
             logging.error(f"""Failed to load documents from {
                           url}: {str(e)} \n""")
