@@ -1,7 +1,7 @@
 import datetime
-import getpass
 import os
 import logging
+from dotenv import load_dotenv
 
 from langchain import hub
 from langchain.chains import create_history_aware_retriever, create_retrieval_chain
@@ -26,6 +26,14 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(filename)s: line:%(lineno)d - %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
+
+try:
+    logging.info(f"""Loading environment variables \n""")
+    load_dotenv(dotenv_path='.env.local')
+    logging.info(f"""Environment variables loaded \n""")
+except Exception as e:
+    logging.error(f"""Failed to load environment variables: {str(e)} \n""")
+    raise Exception(f"""Failed to load environment variables: {str(e)}""")
 
 
 def time_taken(start_time):
@@ -79,10 +87,10 @@ class LangchainPipeline:
         Set up the environment variables for langsmith
         """
         try:
-            os.environ["LANGCHAIN_TRACING_V2"] = "true"
-            # os.environ["LANGCHAIN_API_KEY"] = getpass.getpass()
-            os.environ["LANGCHAIN_API_KEY"] = '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'
-            os.environ["USER_AGENT"] = "LangchainPipeline/1.0"
+            os.environ["LANGCHAIN_TRACING_V2"] = os.getenv(
+                "LANGCHAIN_TRACING_V2")
+            os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
+            os.environ["USER_AGENT"] = os.getenv("USER_AGENT")
             logging.info(f"""Fetched langsmith API key \n""")
         except Exception as e:
             logging.error(f"""Failed to fetch langsmith API key: {
@@ -125,7 +133,7 @@ class LangchainPipeline:
                     logging.error(f"""Failed to set up conversation chain: {
                                   str(e)} """)
                     raise Exception(f"""Failed to set up conversation chain: {
-                        str(e)}""")    
+                        str(e)}""")
             logging.info(f"""Pipeline setup complete, Time Taken: {
                 time_taken(start_time)} \n""")
         except Exception as e:
@@ -140,7 +148,7 @@ class LangchainPipeline:
         """
         # if self.__url == url:
         #     logging.info(f"Retriever already set up for {url} ")
-        #     return     
+        #     return
         try:
             try:
                 self.loader.load(url)
