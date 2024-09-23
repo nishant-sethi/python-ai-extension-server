@@ -18,14 +18,8 @@ from utils.ai.custom_document_loader import CustomDocumentLoader
 from utils.ai.custom_document_retriever import CustomDocumentRetriever
 from utils.ai.custom_document_splitter import CustomDocumentSplitter
 from utils.ai.custom_embedding_store import CustomEmbeddingStore
+from utils.helpers import check_if_model_exists, time_taken
 
-
-logging.basicConfig(
-    filename='app.log',
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(filename)s: line:%(lineno)d - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
 
 try:
     logging.info(f"""Loading environment variables \n""")
@@ -34,10 +28,6 @@ try:
 except Exception as e:
     logging.error(f"""Failed to load environment variables: {str(e)} \n""")
     raise Exception(f"""Failed to load environment variables: {str(e)}""")
-
-
-def time_taken(start_time):
-    return f"{(datetime.datetime.now() - start_time).total_seconds():.3f}s "
 
 
 class LangchainPipeline:
@@ -98,7 +88,7 @@ class LangchainPipeline:
             raise Exception(f"""Failed to fetch langsmith API key: {
                 str(e)}""")
 
-    def setup(self, url, qa_chain=True):
+    def setup(self, url, model_name, qa_chain=True):
         """
         Sets up the pipeline environment and initializes components.
         """
@@ -113,7 +103,7 @@ class LangchainPipeline:
                               str(e)} """)
                 raise Exception(f"""Failed to set up retriever: {str(e)}""")
             try:
-                self.setup_llm()
+                self.setup_llm(model_name)
             except Exception as e:
                 logging.error(f"""Failed to set up LLM: {
                               str(e)} """)
@@ -186,12 +176,15 @@ class LangchainPipeline:
                 str(e)} """)
             raise Exception(f"""Failed to set up retriever: {str(e)}""")
 
-    def setup_llm(self):
+    def setup_llm(self, model_name):
         """
         Initializes the language model.
         """
         try:
-            self.__llm = ChatOllama(model="llama3.1")
+            if not check_if_model_exists(model_name):
+                logging.error(f"Model {model_name} does not exist ")
+                raise Exception(f"Model {model_name} does not exist")
+            self.__llm = ChatOllama(model=model_name)
             logging.info(f"\nInitialized LLM \n")
         except Exception as e:
             logging.error(f"Failed to set up LLM: {str(e)} ")

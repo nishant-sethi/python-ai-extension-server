@@ -5,20 +5,7 @@ import logging
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-logging.basicConfig(
-    filename='app.log',
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(filename)s: line:%(lineno)d - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-
-
-def log_time():
-    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-
-def time_taken(start_time):
-    return f"""{(datetime.datetime.now() - start_time).total_seconds() * 1000:.3f}ms """
+from utils.helpers import time_taken
 
 
 """ Split the documents into smaller chunks.

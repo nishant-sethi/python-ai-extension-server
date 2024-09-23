@@ -5,16 +5,7 @@ import logging
 from langchain_chroma import Chroma
 from langchain_ollama import OllamaEmbeddings
 
-logging.basicConfig(
-    filename='app.log',
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(filename)s: line:%(lineno)d - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-
-
-def time_taken(start_time):
-    return f"""{(datetime.datetime.now() - start_time).total_seconds() * 1000:.3f}ms """
+from utils.helpers import time_taken
 
 
 """ Store the split documents into a vector store.

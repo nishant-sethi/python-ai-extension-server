@@ -65,10 +65,11 @@ def setup():
             data = json.loads(request.get_data().decode())
             logging.debug(f"Data: {data}")
             url = data.get("url")
+            model_name = data.get("model_name") or 'llama3.1'
             if not url:
                 logging.error(f"Missing URL ")
                 return jsonify({'error': 'Missing required parameters'}), 400
-            pipeline.setup(url)
+            pipeline.setup(url, model_name=model_name)
             return jsonify({'message': 'Setup successful'}), 200
         except Exception as e:
             return jsonify({'error': f"Error occurred: {e}"}), 500
@@ -108,7 +109,7 @@ def summarize():
             return jsonify({'error': 'JSON object read failed'}), 400
 
         logging.info(f"Query Received: {query} ")
-        
+
         def generate_response():
             try:
                 logging.info(f"Streaming response started ")
