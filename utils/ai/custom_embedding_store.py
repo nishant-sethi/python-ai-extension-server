@@ -5,7 +5,7 @@ import logging
 from langchain_chroma import Chroma
 from langchain_ollama import OllamaEmbeddings
 
-from utils.helpers import time_taken
+from utils.helpers import check_if_model_exists, time_taken
 
 
 """ Store the split documents into a vector store.
@@ -50,6 +50,9 @@ class CustomEmbeddingStore:
         try:
             start_time = datetime.datetime.now()
             logging.info(f"vectore store: {self.vector_store}")
+            if not check_if_model_exists(self.model):
+                logging.error(f"""Model Embedding {self.model} not found \n""")
+                raise Exception(f"""Model Embedding {self.model} not found""")
             store = self.vector_store.from_documents(
                 documents=docs_split, embedding=self.embedding(model=self.model))
             self.store = store
