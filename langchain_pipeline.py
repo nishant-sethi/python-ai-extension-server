@@ -79,8 +79,8 @@ class LangchainPipeline:
         try:
             os.environ["LANGCHAIN_TRACING_V2"] = os.getenv(
                 "LANGCHAIN_TRACING_V2")
-            os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
-            os.environ["USER_AGENT"] = os.getenv("USER_AGENT")
+            os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY") or None
+            os.environ["USER_AGENT"] = os.getenv("USER_AGENT") or None
             logging.info(f"""Fetched langsmith API key \n""")
         except Exception as e:
             logging.error(f"""Failed to fetch langsmith API key: {

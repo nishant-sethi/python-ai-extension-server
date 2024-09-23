@@ -20,7 +20,7 @@ def check_if_model_exists(model_name):
         logging.error(f"Model name not provided ")
         raise Exception(f"Model name not provided")
     home_dir = Path.home()
-    registry_dir = os.getenv("REGISTRY_DIR")
+    registry_dir = os.getenv("REGISTRY_DIR") or '.ollama/models/manifests/registry.ollama.ai'
     full_path = Path.joinpath(home_dir, registry_dir, 'library', model_name)
     return full_path.exists()
 
