@@ -4,7 +4,7 @@ import json
 
 from flask import Flask, jsonify, request, Response
 from flask_cors import CORS
-from langchain_pipeline import LangchainPipeline
+from src.langchain_pipeline import LangchainPipeline
 
 # Configure logging
 logging.basicConfig(
