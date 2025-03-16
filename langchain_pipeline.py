@@ -1,3 +1,4 @@
+# IMPORTS
 import datetime
 import os
 import logging
@@ -19,8 +20,10 @@ from utils.ai.custom_document_retriever import CustomDocumentRetriever
 from utils.ai.custom_document_splitter import CustomDocumentSplitter
 from utils.ai.custom_embedding_store import CustomEmbeddingStore
 from utils.helpers import check_if_model_exists, time_taken
+from utils.custom_exceptions import ConversationChainSetupError, DocuemntLoaderException, DocumentEmbeddingException, DocumentRetrieverException, DocumentSplitterException, GetDocumentRetrieverException, LLMSetupError, RAGChainSetupError, RetrieverSetupError, TokenGenerationException
+# endregion
 
-
+# Load environment variables
 try:
     logging.info(f"""Loading environment variables \n""")
     load_dotenv(dotenv_path='.env.local')
@@ -28,7 +31,6 @@ try:
 except Exception as e:
     logging.error(f"""Failed to load environment variables: {str(e)} \n""")
     raise Exception(f"""Failed to load environment variables: {str(e)}""")
-
 
 class LangchainPipeline:
     def __init__(
@@ -96,36 +98,38 @@ class LangchainPipeline:
         self.setup_environment_variables()
         # self.__url = url
         try:
-            try:
-                self.setup_retriever(url)
-            except Exception as e:
-                logging.error(f"""Failed to set up retriever: {
-                              str(e)} """)
-                raise Exception(f"""Failed to set up retriever: {str(e)}""")
-            try:
-                self.setup_llm(model_name)
-            except Exception as e:
-                logging.error(f"""Failed to set up LLM: {
-                              str(e)} """)
-                raise Exception(f"""Failed to set up LLM: {str(e)}""")
-            try:
-                self.setup_rag_chain()
-            except Exception as e:
-                logging.error(f"""Failed to set up RAG chain: {
-                              str(e)} """)
-                raise Exception(f"""Failed to set up RAG chain: {str(e)}""")
+            # Set up the document retriever
+            self.setup_retriever(url)
+            # Set up the language model
+            self.setup_llm(model_name)
+            # Set up the RAG chain
+            self.setup_rag_chain()
+            
             if qa_chain:
                 logging.debug(
                     f"Setting up conversation RAG chain \n")
-                try:
-                    self.setup_conversation_chain()
-                except Exception as e:
+
+                # Set up the conversation chain
+                self.setup_conversation_chain()
+            logging.info(f"""Pipeline setup complete, Time Taken: {
+                time_taken(start_time)} \n""")
+        except RetrieverSetupError as e:
+                logging.error(f"""Failed to set up retriever: {
+                              str(e)} """)
+                raise Exception(f"""Failed to set up retriever: {str(e)}""")
+        except LLMSetupError as e:
+                logging.error(f"""Failed to set up LLM: {
+                              str(e)} """)
+                raise Exception(f"""Failed to set up LLM: {str(e)}""")
+        except RAGChainSetupError as e:
+                logging.error(f"""Failed to set up RAG chain: {
+                              str(e)} """)
+                raise Exception(f"""Failed to set up RAG chain: {str(e)}""")
+        except ConversationChainSetupError as e:
                     logging.error(f"""Failed to set up conversation chain: {
                                   str(e)} """)
                     raise Exception(f"""Failed to set up conversation chain: {
                         str(e)}""")
-            logging.info(f"""Pipeline setup complete, Time Taken: {
-                time_taken(start_time)} \n""")
         except Exception as e:
             logging.error(f"""Failed to set up langchain environment: {
                           str(e)}  \n""")
@@ -140,55 +144,55 @@ class LangchainPipeline:
         #     logging.info(f"Retriever already set up for {url} ")
         #     return
         try:
-            try:
-                self.loader.load(url)
-            except Exception as e:
+            # Load the documents
+            self.loader.load(url)
+            # Split the documents
+            self.splitter.split()
+            # Store the embeddings
+            self.embedding_store.store_embeddings()
+            # Retrieve the documents
+            self.document_retriever.retrieve()
+            # Get the retriever
+            self.__retriever = self.document_retriever.get_retriever()
+            self.__url = url
+        except DocuemntLoaderException as e:
                 logging.error(f"""Failed to load documents: {
                               str(e)} """)
-                raise Exception(f"""Failed to load documents: {str(e)}""")
-            try:
-                self.splitter.split()
-            except Exception as e:
+                raise RetrieverSetupError(f"""Failed to load documents: {str(e)}""")
+        except DocumentSplitterException as e:
                 logging.error(f"""Failed to split documents: {
                               str(e)} """)
-                raise Exception(f"""Failed to split documents: {str(e)}""")
-            try:
-                self.embedding_store.store_embeddings()
-            except Exception as e:
+                raise RetrieverSetupError(f"""Failed to split documents: {str(e)}""")
+        except DocumentEmbeddingException as e:
                 logging.error(f"""Failed to store documents: {
                               str(e)} """)
-                raise Exception(f"""Failed to store documents: {str(e)}""")
-            try:
-                self.document_retriever.retrieve()
-            except Exception as e:
+                raise RetrieverSetupError(f"""Failed to store documents: {str(e)}""")
+        except DocumentRetrieverException as e:
                 logging.error(f"""Failed to retrieve documents: {
                               str(e)} """)
-                raise Exception(f"""Failed to retrieve documents: {str(e)}""")
-            try:
-                self.__retriever = self.document_retriever.get_retriever()
-            except Exception as e:
+                raise RetrieverSetupError(f"""Failed to retrieve documents: {str(e)}""")
+        except GetDocumentRetrieverException as e:
                 logging.error(f"""Failed to get retriever: {
                               str(e)} """)
-                raise Exception(f"""Failed to get retriever: {str(e)}""")
-            self.__url = url
+                raise RetrieverSetupError(f"""Failed to get retriever: {str(e)}""")
         except Exception as e:
             logging.error(f"""Failed to set up retriever: {
                 str(e)} """)
-            raise Exception(f"""Failed to set up retriever: {str(e)}""")
+            raise RetrieverSetupError(f"""Failed to set up retriever: {str(e)}""")
 
     def setup_llm(self, model_name):
         """
         Initializes the language model.
         """
+        if not check_if_model_exists(model_name):
+            logging.error(f"Model {model_name} does not exist ")
+            raise LLMSetupError(f"Model {model_name} does not exist")
         try:
-            if not check_if_model_exists(model_name):
-                logging.error(f"Model {model_name} does not exist ")
-                raise Exception(f"Model {model_name} does not exist")
             self.__llm = ChatOllama(model=model_name)
             logging.info(f"\nInitialized LLM \n")
         except Exception as e:
             logging.error(f"Failed to set up LLM: {str(e)} ")
-            raise Exception(f"Failed to set up LLM: {str(e)}")
+            raise LLMSetupError(f"Failed to set up LLM: {str(e)}")
 
     def setup_rag_chain(self):
         """
@@ -205,15 +209,10 @@ class LangchainPipeline:
         logging.debug(f'retriever = {type(self.__retriever)}, format_docs = {
                       type(format_docs)}, prompt = {type(self.__prompt)}, llm = {type(self.__llm)}\n')
         # Ensure the retriever and other components are initialized
-        if not self.__retriever:
-            raise Exception(
-                "Retriever not set up. Please set up retriever before RAG chain.")
-        if not self.__prompt:
-            raise Exception(
-                "Prompt not set up. Please set up prompt before RAG chain.")
-        if not self.__llm:
-            raise Exception(
-                "LLM not set up. Please set up LLM before RAG chain.")
+        if not self.__retriever or not self.__prompt or not self.__llm:
+            logging.error(f"Retriever, prompt, or LLM not set up ")
+            raise RAGChainSetupError(f"Retriever, prompt, or LLM not set up")
+        
         try:
             self.__rag_chain = (
                 {"context": self.__retriever | format_docs,
@@ -226,7 +225,7 @@ class LangchainPipeline:
         except Exception as e:
             logging.error(f"""Failed to set up RAG chain: {
                           str(e)} """)
-            raise Exception(f"Failed to set up RAG chain: {str(e)}")
+            raise RAGChainSetupError(f"Failed to set up RAG chain: {str(e)}")
 
     def setup_conversation_chain(self):
         """
@@ -256,10 +255,15 @@ class LangchainPipeline:
                 logging.info(f"""Total messages in chat history: {
                     len(chat_history.messages)} """)
                 return chat_history
+            except TokenGenerationException as e:
+                logging.error(f"""Failed to trim and summarize history: {
+                              str(e)} """)
+                raise ConversationChainSetupError(f"""Failed to trim and summarize history: {
+                    str(e)}""")
             except Exception as e:
                 logging.error(f"""Failed to trim and summarize history: {
                               str(e)} """)
-                raise Exception(f"""Failed to trim and summarize history: {
+                raise ConversationChainSetupError(f"""Failed to trim and summarize history: {
                     str(e)}""")
 
         # function to get the session history
@@ -323,7 +327,7 @@ class LangchainPipeline:
         except Exception as e:
             logging.error(f"""Failed to set up conversation chain: {
                           str(e)} """)
-            raise Exception(f"""Failed to set up conversation chain: {
+            raise ConversationChainSetupError(f"""Failed to set up conversation chain: {
                 str(e)}""")
 
     def generate(self, url, query):
@@ -342,7 +346,7 @@ class LangchainPipeline:
         except Exception as e:
             logging.error(f"""Failed to generate response: {
                           str(e)} """)
-            raise Exception(f"""Failed to generate response: {
+            raise TokenGenerationException(f"""Failed to generate response: {
                 str(e)}""")
 
     def generate_response_from_conversation(self, query, session_id):
@@ -369,7 +373,7 @@ class LangchainPipeline:
         except Exception as e:
             logging.error(f"Failed to generate response: {
                           str(e)} ")
-            raise Exception(f"Failed to generate response: {str(e)}")
+            raise TokenGenerationException(f"Failed to generate response: {str(e)}")
 
     def generate_streaming_response_from_conversation(self, query, session_id):
         """
@@ -397,7 +401,7 @@ class LangchainPipeline:
         except Exception as e:
             logging.error(f"""Failed to generate streaming response: {
                           str(e)} """)
-            raise Exception(f"Failed to generate streaming response: {str(e)}")
+            raise TokenGenerationException(f"Failed to generate streaming response: {str(e)}")
 
     def check_if_setup(self):
         if self.__rag_chain is None and self.__conversation_chain is None:
@@ -419,55 +423,3 @@ class LangchainPipeline:
         logging.info(f"Pipeline cleaned up ")
 
 
-# system_prompt = (
-#     """You are an assistant for question-answering tasks.
-#     Use the following pieces of context to answer the question.
-#     If you don't know the answer, just say that you don't know, don't try to make up an answer.
-#     Use three sentences maximum and keep the answer as concise as possible.
-#     Generate the response in markdown format wherever possible.
-#     Always start your answer with "thanks for asking!".
-#     \n\n
-#     {context}
-#     """
-# )
-
-# contextualized_q_system_prompt = (
-#     """ Give a chat history and the latest user question
-#         which might reference context from the chat history.
-#         formulate a standalone question that can be understood
-#         without the context of the chat history. Do not answer the question,
-#         just reformulate it if necessary and otherwise pass it through.
-#     """
-# )
-
-# qa_chain = True
-
-# prompt_template = """Use the following pieces of context and provide the summary of it.
-# Make sure to keep the summary concise and to the point.
-# If you are unable to generate the summary, please let me know.
-# {context}
-# Question: {question}
-# Helpful Answer:"""
-# url = 'https://python.langchain.com/v0.1/docs/use_cases/question_answering/quickstart/'
-
-# pipeline = LangchainPipeline(
-#     prompt=prompt_template,
-#     contextualized_q_system_prompt=contextualized_q_system_prompt,
-#     system_prompt=system_prompt,
-# )
-# try:
-#     pipeline.setup(url=url)
-# except Exception as e:
-#     logging.error(f"Failed to set up pipeline: {str(e)} ")
-#     raise Exception(f"Failed to set up pipeline: {str(e)}")
-
-# try:
-#     query = input("Enter your query: ")
-#     if qa_chain:
-#         response = pipeline.generate_response_from_conversation(
-#             query, "session_1")
-#     else:
-#         response = pipeline.generate(query)
-#     logging.info(f"Response: {response} ")
-# except Exception as e:
-#     logging.error(f"Failed to generate response: {str(e)} ")

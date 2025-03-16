@@ -1,6 +1,8 @@
 
 import logging
 
+from utils.custom_exceptions import DocumentRetrieverException, GetDocumentRetrieverException
+
 
 class CustomDocumentRetriever:
     """Custom class to create a Langchain DocumentRetriever at runtime."""
@@ -29,7 +31,7 @@ class CustomDocumentRetriever:
         """
         if not self.retriever:
             logging.error(f""" Retriever not set up \n""")
-            raise Exception(f"""Retriever not set up.""")
+            raise GetDocumentRetrieverException(f"""Retriever not set up.""")
         return self.retriever
 
     def retrieve(self):
@@ -41,7 +43,7 @@ class CustomDocumentRetriever:
             logging.info(f"Retrieved vector store ")
         except Exception as e:
             logging.error(f"""No vector store to retrieve from: {str(e)} \n""")
-            raise Exception(f"""No vector store to retrieve from: {str(e)}""")
+            raise DocumentRetrieverException(f"""No vector store to retrieve from: {str(e)}""")
 
         try:
             logging.info(f"Initializing retriever ")
@@ -51,4 +53,4 @@ class CustomDocumentRetriever:
             logging.info(f"Initialized retriever \n")
         except Exception as e:
             logging.error(f"Failed to initialize retriever: {str(e)} \n")
-            raise Exception(f"""Failed to initialize retriever: {str(e)}""")
+            raise DocumentRetrieverException(f"""Failed to initialize retriever: {str(e)}""")

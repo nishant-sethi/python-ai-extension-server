@@ -88,10 +88,17 @@ def teardown():
     else:
         return jsonify({'error': 'Invalid request method'}), 405
 
-
+""" This endpoint is used to summarize the given text.
+    The text is summarized using the pipeline and the response is streamed back to the client."""
 @app.route('/summarize', methods=['POST'])
 def summarize():
+    
     logging.debug(f"Request acknowledged ")
+    
+    # Check if the request method is POST and extract query and session_id
+    # query: The text to summarize
+    # session_id: The session id for the conversation
+    
     if request.method == 'POST':
         try:
             data = json.loads(request.get_data().decode())
@@ -110,6 +117,7 @@ def summarize():
 
         logging.info(f"Query Received: {query} ")
 
+        # a generator function to stream the response back to the client
         def generate_response():
             try:
                 logging.info(f"Streaming response started ")

@@ -5,6 +5,7 @@ import logging
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
+from utils.custom_exceptions import DocumentSplitterException
 from utils.helpers import time_taken
 
 
@@ -64,5 +65,5 @@ class CustomDocumentSplitter:
         except Exception as e:
             logging.error(f"""Failed to split documents: {
                           str(e)} \n""")
-            raise Exception(f"""Failed to split documents: {
+            raise DocumentSplitterException(f"""Failed to split documents: {
                 str(e)}""")

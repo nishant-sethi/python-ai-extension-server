@@ -5,6 +5,7 @@ import logging
 import bs4
 from langchain_community.document_loaders import WebBaseLoader
 
+from utils.custom_exceptions import DocuemntLoaderException
 from utils.helpers import time_taken
 
 
@@ -54,5 +55,5 @@ class CustomDocumentLoader:
         except Exception as e:
             logging.error(f"""Failed to load documents from {
                           url}: {str(e)} \n""")
-            raise Exception(f"""Failed to load documents from {
+            raise DocuemntLoaderException(f"""Failed to load documents from {
                 url}: {str(e)}""")

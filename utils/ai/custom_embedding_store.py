@@ -5,6 +5,7 @@ import logging
 from langchain_chroma import Chroma
 from langchain_ollama import OllamaEmbeddings
 
+from utils.custom_exceptions import DocumentEmbeddingException
 from utils.helpers import check_if_model_exists, time_taken
 
 
@@ -61,5 +62,5 @@ class CustomEmbeddingStore:
         except Exception as e:
             logging.error(f"""Some error occurred while storing documents: {
                           str(e)} \n""")
-            raise Exception(f"""Some error occurred while storing documents: {
+            raise DocumentEmbeddingException(f"""Some error occurred while storing documents: {
                 str(e)}""")
